@@ -394,8 +394,12 @@ function initFirebase() {
     _fbDB.ref('planner').once('value').then(snap => {
       const remote = snap.val();
       if (remote) {
+        // Firebaseにデータあり → ローカルに適用
         applyRemoteData(remote);
         buildTimeline(); updateHeader(); renderStats(); scrollToNow();
+      } else if (DB.getTasks().length > 0) {
+        // Firebaseが空 かつ ローカルにデータあり → Firebaseへ初回アップロード
+        saveToFirebase();
       }
       setSyncDot('ok');
 
