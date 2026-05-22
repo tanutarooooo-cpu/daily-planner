@@ -795,15 +795,47 @@ function openTaskSheet(taskId) {
                <button class="btn btn-muted" onclick="deleteTask('${taskId}')">削除</button>`;
   }
 
+  const catPills = Object.entries(CATEGORIES).map(([key, c]) => {
+    const sel = task.category === key;
+    const style = sel
+      ? `background:${c.color};color:white;border-color:${c.color}`
+      : `border-color:${c.color};background:white;color:#888`;
+    return `<button class="cat-pill" style="${style}"
+      onclick="changeTaskCategory('${taskId}','${key}')" type="button">${c.label}</button>`;
+  }).join('');
+
   document.getElementById('sheetContent').innerHTML = `
     <div class="sheet-title">${task.title}</div>
     <div class="sheet-subtitle">${task.scheduledTime} 開始 · 予定 ${task.duration}分</div>
     <div class="timer-display${isOvertime ? ' overtime' : ''}" id="sheetTimer">${display}</div>
     <div class="timer-label" id="timerLabel">${isRunning ? (isOvertime ? '超過中' : '残り時間') : '予定時間'}</div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;color:#bbb;font-weight:600;letter-spacing:0.3px;margin-bottom:6px">カテゴリ</div>
+      <div class="cat-picker">${catPills}</div>
+    </div>
     <div class="sheet-buttons">${buttons}</div>
   `;
   showOverlay();
   if (isRunning) startTicking();
+}
+
+function changeTaskCategory(taskId, newCat) {
+  const tasks = DB.getTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  // Toggle: click same category to clear
+  task.category = task.category === newCat ? null : newCat;
+  DB.saveTasks(tasks);
+
+  // Sync all log entries for this task
+  const log = DB.getLog();
+  log.forEach(e => { if (e.taskId === taskId) e.category = task.category; });
+  localStorage.setItem('dp_log', JSON.stringify(log));
+
+  buildTimeline();
+  renderStats();
+  openTaskSheet(taskId);
 }
 
 function openAddSheet() {
