@@ -171,6 +171,29 @@
     .task-block.completed .task-title { text-decoration: line-through; color: #bbb; }
     .task-block.skipped .task-title { color: #ccc; }
 
+    /* Resize handle */
+    .resize-handle {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 10px; cursor: ns-resize; border-radius: 0 0 7px 7px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .resize-handle::after {
+      content: ''; width: 20px; height: 2px;
+      background: rgba(0,0,0,0.18); border-radius: 1px;
+    }
+    .task-block.completed .resize-handle,
+    .task-block.skipped .resize-handle { display: none; }
+
+    /* Category picker */
+    .cat-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cat-pill {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      border: 2px solid #e0dcd5; background: white; cursor: pointer;
+      font-family: inherit; color: #888; transition: all 0.15s;
+    }
+    .cat-pill:hover { opacity: 0.8; }
+    .cat-pill.selected { color: white; }
+
     /* Modal overlay */
     .overlay {
       position: fixed; inset: 0;
@@ -314,6 +337,15 @@ const DB = {
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const pad = n => String(n).padStart(2, '0');
 
+const CATEGORIES = {
+  work:     { label: '仕事',  color: '#27ae60', bg: '#eafaf1' },
+  study:    { label: '勉強',  color: '#e74c3c', bg: '#fdedec' },
+  exercise: { label: '運動',  color: '#f39c12', bg: '#fef9e7' },
+  break:    { label: '休憩',  color: '#3498db', bg: '#eaf4fb' },
+  personal: { label: '個人',  color: '#9b59b6', bg: '#f5eef8' },
+  other:    { label: 'その他', color: '#7f8c8d', bg: '#f2f3f4' },
+};
+
 // ===== TIMELINE =====
 function buildTimeline() {
   const tl = document.getElementById('timeline');
@@ -347,8 +379,19 @@ function buildTimeline() {
     const block = mkEl('div', `task-block ${cls}`);
     block.style.top = top + 'px';
     block.style.height = height + 'px';
-    block.innerHTML = `<div class="task-title">${t.title}</div><div class="task-meta">${t.scheduledTime} · ${t.duration}分${icon}</div>`;
+
+    // Category color (pending/running only)
+    const cat = t.category ? CATEGORIES[t.category] : null;
+    if (cat && !t.completed && !t.skipped && !isRunning) {
+      block.style.background = cat.bg;
+      block.style.borderLeftColor = cat.color;
+    }
+
+    const catDot = cat ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${cat.color};margin-right:4px;vertical-align:middle;"></span>` : '';
+    block.innerHTML = `<div class="task-title">${catDot}${t.title}</div><div class="task-meta">${t.scheduledTime} · ${t.duration}分${icon}</div>`;
+
     addDragBehavior(block, t.id, top);
+    if (!t.completed && !t.skipped) addResizeBehavior(block, t.id, height);
     tl.appendChild(block);
   });
 
@@ -455,6 +498,7 @@ function completeTask(taskId) {
     if (elapsed > 0) {
       DB.addLog({
         id: uid(), taskId, title: task.title, date: TODAY,
+        category: task.category || null,
         startTime: state?.startTime || now, endTime: now,
         duration: Math.max(1, Math.ceil(elapsed / 60)),
         scheduled: task.duration
@@ -555,9 +599,14 @@ function openAddSheet() {
   const adjM = mm >= 60 ? 0 : mm;
   const defaultTime = `${pad(adjH % 24)}:${pad(adjM)}`;
 
+  const catOptions = Object.entries(CATEGORIES).map(([key, c]) =>
+    `<button class="cat-pill" data-cat="${key}" style="border-color:${c.color}"
+      onclick="selectCat(this)" type="button">${c.label}</button>`
+  ).join('');
+
   document.getElementById('sheetContent').innerHTML = `
     <div class="sheet-title">タスクを追加</div>
-    <div style="height:16px"></div>
+    <div style="height:14px"></div>
     <div class="form-group">
       <label class="form-label">タスク名</label>
       <input type="text" class="form-input" id="newTitle" placeholder="何をしますか？" autofocus>
@@ -572,7 +621,12 @@ function openAddSheet() {
         <input type="number" class="form-input" id="newDuration" value="30" min="5" max="480" step="5">
       </div>
     </div>
-    <div class="sheet-buttons">
+    <div class="form-group">
+      <label class="form-label">カテゴリ（任意）</label>
+      <div class="cat-picker">${catOptions}</div>
+      <input type="hidden" id="newCategory" value="">
+    </div>
+    <div class="sheet-buttons" style="margin-top:16px">
       <button class="btn btn-primary" onclick="addTask()">追加</button>
       <button class="btn btn-muted" onclick="closeSheet()">キャンセル</button>
     </div>
@@ -581,13 +635,31 @@ function openAddSheet() {
   setTimeout(() => document.getElementById('newTitle')?.focus(), 50);
 }
 
+function selectCat(btn) {
+  document.querySelectorAll('.cat-pill').forEach(b => {
+    b.classList.remove('selected');
+    b.style.background = 'white';
+    b.style.color = '#888';
+  });
+  const cat = CATEGORIES[btn.dataset.cat];
+  if (document.getElementById('newCategory').value === btn.dataset.cat) {
+    document.getElementById('newCategory').value = '';
+  } else {
+    btn.classList.add('selected');
+    btn.style.background = cat.color;
+    btn.style.color = 'white';
+    document.getElementById('newCategory').value = btn.dataset.cat;
+  }
+}
+
 function addTask() {
   const title = document.getElementById('newTitle')?.value.trim();
   const time = document.getElementById('newTime')?.value;
   const duration = parseInt(document.getElementById('newDuration')?.value) || 30;
+  const category = document.getElementById('newCategory')?.value || null;
   if (!title || !time) return;
   const tasks = DB.getTasks();
-  tasks.push({ id: uid(), title, scheduledTime: time, duration, date: TODAY, completed: false, createdAt: Date.now() });
+  tasks.push({ id: uid(), title, scheduledTime: time, duration, category, date: TODAY, completed: false, createdAt: Date.now() });
   DB.saveTasks(tasks);
   closeSheet(); buildTimeline(); updateHeader();
 }
@@ -651,6 +723,46 @@ function addDragBehavior(block, taskId, initialTop) {
       const task = tasks.find(t => t.id === taskId);
       if (task) { task.scheduledTime = newTime; DB.saveTasks(tasks); }
 
+      buildTimeline();
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ===== RESIZE =====
+function addResizeBehavior(block, taskId, initialHeight) {
+  const handle = mkEl('div', 'resize-handle');
+  block.appendChild(handle);
+
+  handle.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startY = e.clientY;
+    let newDur = initialHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (e) => {
+      const dy = e.clientY - startY;
+      newDur = Math.max(15, Math.round((initialHeight + dy) / 5) * 5);
+      block.style.height = Math.max(28, newDur) + 'px';
+      const meta = block.querySelector('.task-meta');
+      if (meta) {
+        const task = DB.getTasks().find(t => t.id === taskId);
+        if (task) meta.textContent = `${task.scheduledTime} · ${newDur}分`;
+      }
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      const tasks = DB.getTasks();
+      const task = tasks.find(t => t.id === taskId);
+      if (task) { task.duration = newDur; DB.saveTasks(tasks); }
       buildTimeline();
     };
 
