@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>インポート</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: #f5f4f1;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .header {
+      padding: 14px 20px 12px;
+      background: #fff;
+      border-bottom: 1px solid #ece9e3;
+    }
+    .header-title { font-size: 22px; font-weight: 800; }
+    .header-sub { font-size: 12px; color: #999; margin-top: 1px; }
+
+    .content { padding: 16px 20px; }
+
+    .section-title {
+      font-size: 11px;
+      color: #bbb;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    /* Step cards */
+    .step-card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px 16px;
+      margin-bottom: 14px;
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .step-num {
+      width: 26px; height: 26px;
+      background: #52b788;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .step-title { font-size: 14px; font-weight: 700; }
+    .step-desc { font-size: 12px; color: #888; line-height: 1.6; margin-bottom: 12px; }
+
+    textarea {
+      width: 100%;
+      border: 1.5px solid #e8e4dd;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 13px;
+      font-family: 'Menlo', 'Courier New', monospace;
+      color: #444;
+      background: #faf9f7;
+      outline: none;
+      resize: vertical;
+      min-height: 120px;
+      line-height: 1.6;
+    }
+    textarea:focus { border-color: #52b788; background: #fff; }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.15s;
+      touch-action: manipulation;
+    }
+    .btn:active { opacity: 0.7; }
+    .btn-primary { background: #52b788; color: white; margin-top: 10px; }
+    .btn-muted { background: #f0ede8; color: #888; margin-top: 8px; }
+
+    /* Parsed tasks list */
+    .parsed-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .parsed-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #faf9f7;
+      border: 1.5px solid #e8e4dd;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .parsed-check {
+      width: 20px; height: 20px;
+      border: 2px solid #52b788;
+      border-radius: 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      touch-action: manipulation;
+    }
+    .parsed-check.checked { background: #52b788; color: white; }
+    .parsed-title {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .parsed-time {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .time-input {
+      width: 72px;
+      padding: 5px 7px;
+      border: 1.5px solid #e8e4dd;
+      border-radius: 7px;
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+      font-family: inherit;
+    }
+    .time-input:focus { border-color: #52b788; }
+    .dur-input {
+      width: 48px;
+      padding: 5px 4px;
+      border: 1.5px solid #e8e4dd;
+      border-radius: 7px;
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+      font-family: inherit;
+    }
+    .dur-input:focus { border-color: #52b788; }
+    .parsed-meta { font-size: 10px; color: #bbb; margin-left: 2px; }
+
+    /* Import result */
+    .result-banner {
+      display: none;
+      background: #eaf5ee;
+      border: 1.5px solid #74c69d;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: #2d6a4f;
+      font-weight: 600;
+    }
+    .result-banner.visible { display: block; }
+
+    /* Today tasks (quick manage) */
+    .today-task-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0ede8;
+    }
+    .today-task-row:last-child { border-bottom: none; }
+    .today-task-title { flex: 1; font-size: 13px; }
+    .today-task-meta { font-size: 11px; color: #bbb; }
+    .delete-btn {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      color: #ddd;
+      padding: 4px;
+      touch-action: manipulation;
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #ece9e3;
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      z-index: 40;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 9px 0 7px;
+      text-decoration: none;
+      color: #ccc;
+      font-size: 9px;
+      gap: 3px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .nav-item.active { color: #52b788; }
+    .nav-icon { font-size: 20px; line-height: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">インポート</div>
+    <div class="header-sub">リマインドリストからタスクを取り込む</div>
+  </div>
+
+  <div class="content">
+
+    <div class="result-banner" id="resultBanner"></div>
+
+    <!-- Step 1: Paste -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">リストを貼り付ける</div>
+      </div>
+      <div class="step-desc">
+        Claude Codeに「今日のタスクをプランナー用に出力して」と頼むか、<br>
+        <code style="background:#f0ede8;padding:1px 5px;border-radius:4px;font-size:11px">_inbox/リマインドリスト.md</code> の内容をそのまま貼り付けてください。<br>
+        <code style="background:#f0ede8;padding:1px 5px;border-radius:4px;font-size:11px">- [ ] タスク名</code> の形式の行を自動で読み取ります。
+      </div>
+      <textarea id="pasteArea" placeholder="- [ ] メルマガを書く&#10;- [ ] Xポストを確認&#10;- [ ] 経理作業&#10;&#10;または任意のテキストをそのまま貼り付けてOK"></textarea>
+      <button class="btn btn-primary" onclick="parseTasks()">読み取る</button>
+    </div>
+
+    <!-- Step 2: Assign times -->
+    <div class="step-card" id="step2" style="display:none">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">時間を設定してインポート</div>
+      </div>
+      <div class="step-desc">各タスクの開始時刻と時間（分）を入力してください。</div>
+      <div class="parsed-list" id="parsedList"></div>
+      <button class="btn btn-primary" onclick="importTasks()" style="margin-top:14px">Today に追加</button>
+      <button class="btn btn-muted" onclick="cancelParse()">キャンセル</button>
+    </div>
+
+    <!-- Today's tasks (manage) -->
+    <div class="step-card" id="todayCard">
+      <div class="step-header">
+        <div class="step-num" style="background:#f0ede8;color:#aaa">📅</div>
+        <div class="step-title">今日のタスク一覧</div>
+      </div>
+      <div id="todayTaskList"></div>
+      <button class="btn btn-muted" style="margin-top:12px" onclick="clearToday()">今日のタスクをすべて削除</button>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="index.html">
+      <span class="nav-icon">📅</span>TODAY
+    </a>
+    <a class="nav-item" href="log.html">
+      <span class="nav-icon">📊</span>ログ
+    </a>
+    <a class="nav-item active" href="sync.html">
+      <span class="nav-icon">📋</span>インポート
+    </a>
+  </nav>
+
+<script>
+const TODAY = new Date().toISOString().slice(0, 10);
+const DB = {
+  getTasks: () => JSON.parse(localStorage.getItem('dp_tasks') || '[]'),
+  saveTasks: t => localStorage.setItem('dp_tasks', JSON.stringify(t)),
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+let parsedItems = [];
+
+function parseTasks() {
+  const text = document.getElementById('pasteArea').value.trim();
+  if (!text) return;
+
+  // Extract lines that look like tasks
+  // Supports: - [ ] task, * [ ] task, □ task, ・task, plain lines
+  const lines = text.split('\n');
+  const tasks = [];
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    // Checkbox format: - [ ] or * [ ] or - [x] (skip completed)
+    const checkMatch = trimmed.match(/^[-*]\s+\[( |x|X)\]\s+(.+)$/);
+    if (checkMatch) {
+      if (checkMatch[1] === ' ') {
+        tasks.push(cleanTitle(checkMatch[2]));
+      }
+      return;
+    }
+
+    // Bullet: - title or ・title (not headers, not blank)
+    const bulletMatch = trimmed.match(/^[-・•]\s+(.+)$/);
+    if (bulletMatch && !trimmed.startsWith('---')) {
+      tasks.push(cleanTitle(bulletMatch[1]));
+      return;
+    }
+
+    // Numbered: 1. title or 1) title
+    const numMatch = trimmed.match(/^\d+[.)]\s+(.+)$/);
+    if (numMatch) {
+      tasks.push(cleanTitle(numMatch[1]));
+      return;
+    }
+  });
+
+  if (tasks.length === 0) {
+    alert('タスクが見つかりませんでした。\n\n「- [ ] タスク名」の形式か、\n箇条書き（- や・）の形式で書いてください。');
+    return;
+  }
+
+  parsedItems = tasks.map((title, i) => ({
+    id: uid(),
+    title,
+    selected: true,
+    time: suggestTime(i),
+    duration: 30,
+  }));
+
+  renderParsedList();
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('step2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cleanTitle(s) {
+  // Remove trailing annotations like (urgent), 【重要】etc
+  return s.replace(/（[^）]*）$/, '').replace(/\([^)]*\)$/, '').trim();
+}
+
+function suggestTime(index) {
+  // Suggest times starting from 9:00, 30min apart
+  const base = 9 * 60 + index * 30;
+  const h = Math.floor(base / 60) % 24;
+  const m = base % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function renderParsedList() {
+  const list = document.getElementById('parsedList');
+  list.innerHTML = parsedItems.map((item, i) => `
+    <div class="parsed-item" id="pi_${i}">
+      <div class="parsed-check ${item.selected ? 'checked' : ''}" onclick="toggleItem(${i})">
+        ${item.selected ? '✓' : ''}
+      </div>
+      <div class="parsed-title" title="${item.title}">${item.title}</div>
+      <div class="parsed-time">
+        <input type="time" class="time-input" value="${item.time}"
+               onchange="parsedItems[${i}].time = this.value">
+        <input type="number" class="dur-input" value="${item.duration}" min="5" max="480" step="5"
+               onchange="parsedItems[${i}].duration = parseInt(this.value)||30">
+        <span class="parsed-meta">分</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleItem(i) {
+  parsedItems[i].selected = !parsedItems[i].selected;
+  const check = document.querySelector(`#pi_${i} .parsed-check`);
+  check.classList.toggle('checked', parsedItems[i].selected);
+  check.textContent = parsedItems[i].selected ? '✓' : '';
+}
+
+function importTasks() {
+  const selected = parsedItems.filter(p => p.selected);
+  if (selected.length === 0) { alert('タスクを選択してください。'); return; }
+
+  const tasks = DB.getTasks();
+  selected.forEach(item => {
+    tasks.push({
+      id: item.id,
+      title: item.title,
+      scheduledTime: item.time,
+      duration: item.duration,
+      date: TODAY,
+      completed: false,
+      createdAt: Date.now(),
+    });
+  });
+  DB.saveTasks(tasks);
+
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('pasteArea').value = '';
+  parsedItems = [];
+
+  const banner = document.getElementById('resultBanner');
+  banner.textContent = `✓ ${selected.length}件のタスクをToday に追加しました`;
+  banner.classList.add('visible');
+  setTimeout(() => banner.classList.remove('visible'), 4000);
+
+  renderTodayTasks();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelParse() {
+  document.getElementById('step2').style.display = 'none';
+  parsedItems = [];
+}
+
+function renderTodayTasks() {
+  const tasks = DB.getTasks().filter(t => t.date === TODAY);
+  const list = document.getElementById('todayTaskList');
+
+  if (tasks.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:#ccc;padding:8px 0">今日のタスクはありません</div>';
+    return;
+  }
+
+  list.innerHTML = tasks.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime)).map(t => `
+    <div class="today-task-row">
+      <div>
+        <div class="today-task-title">${t.title}</div>
+        <div class="today-task-meta">${t.scheduledTime} · ${t.duration}分 ${t.completed ? '✓ 完了' : t.skipped ? '— スキップ' : ''}</div>
+      </div>
+      <button class="delete-btn" onclick="deleteTask('${t.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function deleteTask(id) {
+  const tasks = DB.getTasks().filter(t => t.id !== id);
+  DB.saveTasks(tasks);
+  renderTodayTasks();
+}
+
+function clearToday() {
+  if (!confirm('今日のタスクをすべて削除しますか？')) return;
+  const tasks = DB.getTasks().filter(t => t.date !== TODAY);
+  DB.saveTasks(tasks);
+  renderTodayTasks();
+}
+
+renderTodayTasks();
+</script>
+</body>
+</html>

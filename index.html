@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#ffffff">
+  <title>Today</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: #f5f4f1;
+      color: #1a1a1a;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      padding: 14px 20px 10px;
+      background: #fff;
+      border-bottom: 1px solid #ece9e3;
+      flex-shrink: 0;
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: baseline; }
+    .header-date { font-size: 12px; color: #999; letter-spacing: 0.5px; }
+    .header-title { font-size: 22px; font-weight: 800; color: #111; }
+    .header-stats { font-size: 12px; color: #52b788; margin-top: 1px; font-weight: 500; }
+
+    /* Active banner */
+    .active-banner {
+      background: #2d6a4f;
+      color: white;
+      padding: 9px 20px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .active-banner.visible { display: flex; }
+    .banner-task { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .banner-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .banner-timer { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+    .banner-stop { font-size: 11px; background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 6px; padding: 3px 8px; cursor: pointer; font-weight: 600; }
+
+    /* Timeline */
+    .timeline-container {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      padding-bottom: 88px;
+    }
+    .timeline {
+      position: relative;
+      margin-left: 52px;
+      margin-right: 12px;
+      height: 1440px;
+    }
+
+    /* Hour lines */
+    .hour-line {
+      position: absolute;
+      left: -52px;
+      right: 0;
+      display: flex;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+    .hour-label {
+      width: 44px;
+      font-size: 10px;
+      color: #bbb;
+      text-align: right;
+      padding-right: 8px;
+      line-height: 1;
+      margin-top: -5px;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .hour-tick { flex: 1; border-top: 1px solid #e8e4dd; }
+    .hour-line.half .hour-tick { border-top-style: dashed; border-top-color: #f0ece6; }
+
+    /* Now line */
+    .now-line {
+      position: absolute;
+      left: -52px;
+      right: 0;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .now-dot {
+      width: 9px; height: 9px;
+      background: #e74c3c;
+      border-radius: 50%;
+      margin-left: 39px;
+      flex-shrink: 0;
+    }
+    .now-tick { flex: 1; border-top: 2px solid #e74c3c; }
+
+    /* Task blocks */
+    .task-block {
+      position: absolute;
+      left: 3px;
+      right: 0;
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+      min-height: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      z-index: 5;
+      transition: transform 0.1s;
+      touch-action: manipulation;
+    }
+    .task-block:active { transform: scale(0.97); }
+    .task-block.pending {
+      background: #eaf5ee;
+      border-left: 3px solid #74c69d;
+    }
+    .task-block.running {
+      background: #52b788;
+      border-left: 3px solid #2d6a4f;
+      box-shadow: 0 2px 10px rgba(82,183,136,0.35);
+    }
+    .task-block.running .task-title,
+    .task-block.running .task-meta { color: white; }
+    .task-block.completed {
+      background: #f0ede8;
+      border-left: 3px solid #d4cec5;
+    }
+    .task-block.skipped {
+      background: #f5f4f1;
+      border-left: 3px solid #e0dcd5;
+    }
+    .task-title {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #1a1a1a;
+    }
+    .task-meta { font-size: 10px; color: #999; margin-top: 1px; }
+    .task-block.completed .task-title { text-decoration: line-through; color: #bbb; }
+    .task-block.skipped .task-title { color: #ccc; }
+
+    /* Overlay & Sheet */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+    }
+    .overlay.visible { display: flex; }
+    .sheet {
+      background: white;
+      width: 100%;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 24px calc(40px + env(safe-area-inset-bottom, 0px));
+      animation: slideUp 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: #e0dcd5; border-radius: 2px;
+      margin: 0 auto 18px;
+    }
+    .sheet-title { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+    .sheet-subtitle { font-size: 12px; color: #999; margin-bottom: 20px; }
+
+    .timer-display {
+      text-align: center;
+      font-size: 56px;
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      color: #2d6a4f;
+      margin: 12px 0 20px;
+      letter-spacing: 3px;
+    }
+    .sheet-buttons { display: flex; gap: 10px; }
+    .btn {
+      flex: 1;
+      padding: 14px 8px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.7; }
+    .btn-primary { background: #52b788; color: white; }
+    .btn-success { background: #2d6a4f; color: white; }
+    .btn-muted { background: #f0ede8; color: #888; flex: 0 0 72px; }
+    .btn-skip { background: #f0ede8; color: #aaa; }
+
+    /* Add task form */
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 11px; color: #999; margin-bottom: 4px; display: block; font-weight: 600; letter-spacing: 0.3px; }
+    .form-input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1.5px solid #e8e4dd;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      font-family: inherit;
+      color: #1a1a1a;
+      background: #faf9f7;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: #52b788; background: #fff; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row .form-group { flex: 1; }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+      right: 20px;
+      width: 50px; height: 50px;
+      background: #52b788;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 3px 12px rgba(82,183,136,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      touch-action: manipulation;
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: white;
+      border-top: 1px solid #ece9e3;
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      z-index: 40;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 9px 0 7px;
+      text-decoration: none;
+      color: #ccc;
+      font-size: 9px;
+      gap: 3px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      touch-action: manipulation;
+    }
+    .nav-item.active { color: #52b788; }
+    .nav-icon { font-size: 20px; line-height: 1; }
+
+    /* Empty state */
+    .empty-state {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .empty-state-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.3; }
+    .empty-state-text { font-size: 13px; color: #ccc; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-top">
+      <div class="header-date" id="headerDate"></div>
+    </div>
+    <div class="header-title">Today</div>
+    <div class="header-stats" id="headerStats"></div>
+  </div>
+
+  <div class="active-banner" id="activeBanner" onclick="reopenActiveTask()">
+    <span class="banner-task" id="bannerTask">—</span>
+    <div class="banner-right">
+      <span class="banner-timer" id="bannerTimer">00:00</span>
+      <button class="banner-stop" onclick="event.stopPropagation(); completeActive()">完了</button>
+    </div>
+  </div>
+
+  <div class="timeline-container" id="timelineContainer">
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <button class="fab" onclick="openAddSheet()">＋</button>
+
+  <nav class="bottom-nav">
+    <a class="nav-item active" href="index.html">
+      <span class="nav-icon">📅</span>TODAY
+    </a>
+    <a class="nav-item" href="log.html">
+      <span class="nav-icon">📊</span>ログ
+    </a>
+    <a class="nav-item" href="sync.html">
+      <span class="nav-icon">📋</span>インポート
+    </a>
+  </nav>
+
+  <div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+    <div class="sheet" id="sheet">
+      <div class="sheet-handle"></div>
+      <div id="sheetContent"></div>
+    </div>
+  </div>
+
+<script>
+// ===== DATA =====
+const TODAY = new Date().toISOString().slice(0, 10);
+
+const DB = {
+  getTasks: () => JSON.parse(localStorage.getItem('dp_tasks') || '[]'),
+  saveTasks: t => localStorage.setItem('dp_tasks', JSON.stringify(t)),
+  getTimer: () => JSON.parse(localStorage.getItem('dp_timer') || 'null'),
+  saveTimer: s => s ? localStorage.setItem('dp_timer', JSON.stringify(s)) : localStorage.removeItem('dp_timer'),
+  getLog: () => JSON.parse(localStorage.getItem('dp_log') || '[]'),
+  addLog: e => { const l = DB.getLog(); l.push(e); localStorage.setItem('dp_log', JSON.stringify(l)); },
+};
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// ===== TIMELINE =====
+function buildTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+
+  // Hour lines
+  for (let h = 0; h < 24; h++) {
+    const y = h * 60;
+    const hl = el('div', 'hour-line major', `<span class="hour-label">${pad(h)}:00</span><div class="hour-tick"></div>`);
+    hl.style.top = y + 'px';
+    tl.appendChild(hl);
+
+    const hl2 = el('div', 'hour-line half', `<span class="hour-label"></span><div class="hour-tick"></div>`);
+    hl2.style.top = (y + 30) + 'px';
+    tl.appendChild(hl2);
+  }
+
+  // Tasks
+  const tasks = DB.getTasks().filter(t => t.date === TODAY);
+  tasks.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
+
+  if (tasks.length === 0) {
+    tl.appendChild(el('div', 'empty-state', `<div class="empty-state-icon">🗓</div><div class="empty-state-text">＋でタスクを追加</div>`));
+  }
+
+  const timer = DB.getTimer();
+  tasks.forEach(t => {
+    const isRunning = timer && timer.taskId === t.id;
+    renderTaskBlock(t, isRunning, tl);
+  });
+
+  // Now line
+  placeNowLine(tl);
+}
+
+function renderTaskBlock(task, isRunning, container) {
+  const [h, m] = task.scheduledTime.split(':').map(Number);
+  const top = h * 60 + m;
+  const height = Math.max((task.duration || 30), 30);
+
+  const cls = task.completed ? 'completed' : task.skipped ? 'skipped' : isRunning ? 'running' : 'pending';
+  const icon = task.completed ? ' ✓' : task.skipped ? ' —' : '';
+
+  const block = el('div', `task-block ${cls}`);
+  block.style.top = top + 'px';
+  block.style.height = height + 'px';
+  block.dataset.taskId = task.id;
+  block.innerHTML = `<div class="task-title">${task.title}</div><div class="task-meta">${task.scheduledTime} · ${task.duration}分${icon}</div>`;
+  block.onclick = () => openTaskSheet(task.id);
+  container.appendChild(block);
+}
+
+function placeNowLine(container) {
+  document.querySelector('.now-line')?.remove();
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const line = el('div', 'now-line', `<div class="now-dot"></div><div class="now-tick"></div>`);
+  line.style.top = mins + 'px';
+  (container || document.getElementById('timeline')).appendChild(line);
+}
+
+// ===== HEADER =====
+function updateHeader() {
+  const now = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('headerDate').textContent =
+    `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}（${days[now.getDay()]}）`;
+
+  const tasks = DB.getTasks().filter(t => t.date === TODAY);
+  const done = tasks.filter(t => t.completed || t.skipped).length;
+  document.getElementById('headerStats').textContent =
+    tasks.length > 0 ? `${done} / ${tasks.length} 完了` : 'タスクなし — ＋で追加';
+}
+
+// ===== TIMER =====
+let timerTick = null;
+
+function startTicking() {
+  clearInterval(timerTick);
+  timerTick = setInterval(tickTimer, 1000);
+}
+
+function tickTimer() {
+  const state = DB.getTimer();
+  if (!state) {
+    clearInterval(timerTick);
+    document.getElementById('activeBanner').classList.remove('visible');
+    document.getElementById('sheetTimer')?.parentElement; // ignore
+    return;
+  }
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const display = formatSecs(elapsed);
+
+  document.getElementById('activeBanner').classList.add('visible');
+  document.getElementById('bannerTimer').textContent = display;
+
+  const task = DB.getTasks().find(t => t.id === state.taskId);
+  if (task) document.getElementById('bannerTask').textContent = task.title;
+
+  const sheetTimer = document.getElementById('sheetTimer');
+  if (sheetTimer) sheetTimer.textContent = display;
+}
+
+function formatSecs(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return h > 0
+    ? `${h}:${pad(m)}:${pad(sec)}`
+    : `${pad(m)}:${pad(sec)}`;
+}
+
+// ===== TASK ACTIONS =====
+function startTask(taskId) {
+  const existing = DB.getTimer();
+  if (existing) stopTimer(existing.taskId, false);
+
+  DB.saveTimer({ taskId, startTime: Date.now() });
+  closeSheet();
+  buildTimeline();
+  startTicking();
+  setTimeout(() => openTaskSheet(taskId), 60);
+}
+
+function completeTask(taskId) {
+  const state = DB.getTimer();
+  const now = Date.now();
+  const elapsed = state ? Math.floor((now - state.startTime) / 1000) : 0;
+
+  const tasks = DB.getTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    if (elapsed > 0) {
+      DB.addLog({
+        id: uid(), taskId, title: task.title, date: TODAY,
+        startTime: state?.startTime || now, endTime: now,
+        duration: Math.max(1, Math.ceil(elapsed / 60)),
+        scheduled: task.duration
+      });
+    }
+    task.completed = true;
+    task.actualDuration = Math.max(1, Math.ceil(elapsed / 60));
+    DB.saveTasks(tasks);
+  }
+
+  DB.saveTimer(null);
+  clearInterval(timerTick);
+  document.getElementById('activeBanner').classList.remove('visible');
+  closeSheet();
+  buildTimeline();
+  updateHeader();
+}
+
+function completeActive() {
+  const state = DB.getTimer();
+  if (state) completeTask(state.taskId);
+}
+
+function reopenActiveTask() {
+  const state = DB.getTimer();
+  if (state) openTaskSheet(state.taskId);
+}
+
+function stopTimer(taskId, logIt = true) {
+  const state = DB.getTimer();
+  if (!state) return;
+  if (logIt) {
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    if (elapsed > 0) {
+      const task = DB.getTasks().find(t => t.id === taskId);
+      if (task) DB.addLog({
+        id: uid(), taskId, title: task.title, date: TODAY,
+        startTime: state.startTime, endTime: Date.now(),
+        duration: Math.max(1, Math.ceil(elapsed / 60)), scheduled: task.duration
+      });
+    }
+  }
+  DB.saveTimer(null);
+}
+
+function skipTask(taskId) {
+  const tasks = DB.getTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (task) { task.skipped = true; DB.saveTasks(tasks); }
+  closeSheet(); buildTimeline(); updateHeader();
+}
+
+function deleteTask(taskId) {
+  if (!confirm('このタスクを削除しますか？')) return;
+  const tasks = DB.getTasks().filter(t => t.id !== taskId);
+  DB.saveTasks(tasks);
+  const state = DB.getTimer();
+  if (state && state.taskId === taskId) DB.saveTimer(null);
+  closeSheet(); buildTimeline(); updateHeader();
+}
+
+// ===== SHEETS =====
+function openTaskSheet(taskId) {
+  const task = DB.getTasks().find(t => t.id === taskId);
+  if (!task) return;
+
+  const timer = DB.getTimer();
+  const isRunning = timer && timer.taskId === taskId;
+  const elapsed = isRunning ? Math.floor((Date.now() - timer.startTime) / 1000) : 0;
+
+  let buttons = '';
+  if (task.completed || task.skipped) {
+    buttons = `<button class="btn btn-muted" style="flex:1" onclick="closeSheet()">閉じる</button>
+               <button class="btn btn-skip" onclick="deleteTask('${taskId}')">削除</button>`;
+  } else if (isRunning) {
+    buttons = `<button class="btn btn-success" onclick="completeTask('${taskId}')">✓ 完了</button>
+               <button class="btn btn-muted" onclick="closeSheet()">－</button>`;
+  } else {
+    buttons = `<button class="btn btn-primary" onclick="startTask('${taskId}')">▶ 開始</button>
+               <button class="btn btn-skip" onclick="skipTask('${taskId}')">スキップ</button>
+               <button class="btn btn-muted" onclick="deleteTask('${taskId}')">削除</button>`;
+  }
+
+  document.getElementById('sheetContent').innerHTML = `
+    <div class="sheet-title">${task.title}</div>
+    <div class="sheet-subtitle">${task.scheduledTime} 開始 · 予定 ${task.duration}分</div>
+    <div class="timer-display" id="sheetTimer">${formatSecs(elapsed)}</div>
+    <div class="sheet-buttons">${buttons}</div>
+  `;
+  showOverlay();
+  if (isRunning) startTicking();
+}
+
+function openAddSheet(defaultTime = '') {
+  const now = new Date();
+  if (!defaultTime) {
+    const hh = now.getHours();
+    const mm = Math.ceil(now.getMinutes() / 15) * 15;
+    const adjustedH = mm >= 60 ? hh + 1 : hh;
+    const adjustedM = mm >= 60 ? 0 : mm;
+    defaultTime = `${pad(adjustedH)}:${pad(adjustedM)}`;
+  }
+
+  document.getElementById('sheetContent').innerHTML = `
+    <div class="sheet-title">タスクを追加</div>
+    <div style="height:14px"></div>
+    <div class="form-group">
+      <label class="form-label">タスク名</label>
+      <input type="text" class="form-input" id="newTitle" placeholder="何をしますか？">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">開始時刻</label>
+        <input type="time" class="form-input" id="newTime" value="${defaultTime}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">時間（分）</label>
+        <input type="number" class="form-input" id="newDuration" value="30" min="5" max="480" step="5">
+      </div>
+    </div>
+    <div class="sheet-buttons">
+      <button class="btn btn-primary" onclick="addTask()">追加</button>
+      <button class="btn btn-muted" onclick="closeSheet()">キャンセル</button>
+    </div>
+  `;
+  showOverlay();
+  setTimeout(() => document.getElementById('newTitle')?.focus(), 100);
+}
+
+function addTask() {
+  const title = document.getElementById('newTitle')?.value.trim();
+  const time = document.getElementById('newTime')?.value;
+  const duration = parseInt(document.getElementById('newDuration')?.value) || 30;
+  if (!title || !time) return;
+
+  const tasks = DB.getTasks();
+  tasks.push({ id: uid(), title, scheduledTime: time, duration, date: TODAY, completed: false, createdAt: Date.now() });
+  DB.saveTasks(tasks);
+  closeSheet(); buildTimeline(); updateHeader();
+}
+
+function showOverlay() { document.getElementById('overlay').classList.add('visible'); }
+function closeSheet() { document.getElementById('overlay').classList.remove('visible'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('overlay')) closeSheet(); }
+
+// ===== UTILS =====
+function el(tag, cls, html = '') {
+  const e = document.createElement(tag);
+  e.className = cls;
+  if (html) e.innerHTML = html;
+  return e;
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// ===== INIT =====
+buildTimeline();
+updateHeader();
+
+// Scroll to 2 hours before now
+const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+document.getElementById('timelineContainer').scrollTop = Math.max(0, nowMins - 120);
+
+// Resume timer if running
+if (DB.getTimer()) { startTicking(); }
+
+// Refresh now-line every minute
+setInterval(() => placeNowLine(), 60000);
+</script>
+</body>
+</html>
