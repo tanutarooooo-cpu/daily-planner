@@ -6,6 +6,7 @@
   <title>Today — プランナー</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -390,8 +391,26 @@ function initFirebase() {
     _fbDB = firebase.database();
     setSyncDot('loading');
 
-    // 起動時にFirebaseから最新データを取得
-    _fbDB.ref('planner').once('value').then(snap => {
+    // 匿名認証 → 認証成功後にデータ取得
+    firebase.auth().signInAnonymously().catch(err => {
+      console.error('匿名認証エラー:', err);
+      setSyncDot('error');
+    });
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) return;
+      loadFromFirebase();
+    });
+  } catch(e) {
+    console.warn('Firebase init error:', e);
+    setSyncDot('error');
+  }
+}
+
+function loadFromFirebase() {
+  if (!_fbDB) return;
+  // 起動時にFirebaseから最新データを取得
+  _fbDB.ref('planner').once('value').then(snap => {
       const remote = snap.val();
       if (remote) {
         // Firebaseにデータあり → ローカルに適用
@@ -410,10 +429,6 @@ function initFirebase() {
         if (remote) { applyRemoteData(remote); buildTimeline(); updateHeader(); renderStats(); }
       });
     }).catch(() => setSyncDot('error'));
-  } catch(e) {
-    console.warn('Firebase init error:', e);
-    setSyncDot('error');
-  }
 }
 
 function applyRemoteData(remote) {
