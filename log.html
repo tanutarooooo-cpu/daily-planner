@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>ログ</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
@@ -234,6 +237,49 @@
   </nav>
 
 <script>
+// Firebase setup
+let _fbDB = null;
+
+(function initFirebase() {
+  const cfg = {
+    apiKey: "AIzaSyBkUnSciiuE1XWbrtBnJHzI68WJwcI1Z14",
+    authDomain: "my-planner-dd35c.firebaseapp.com",
+    databaseURL: "https://my-planner-dd35c-default-rtdb.firebaseio.com",
+    projectId: "my-planner-dd35c",
+    storageBucket: "my-planner-dd35c.firebasestorage.app",
+    messagingSenderId: "155300934760",
+    appId: "1:155300934760:web:9e058b3e07dfd99970b7dd"
+  };
+  try {
+    firebase.initializeApp(cfg);
+    _fbDB = firebase.database();
+    firebase.auth().signInAnonymously().catch(() => {});
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user || !_fbDB) return;
+      // Load latest data from Firebase on page load
+      _fbDB.ref('planner').once('value').then(snap => {
+        const remote = snap.val();
+        if (!remote) return;
+        const toArr = v => !v ? [] : Array.isArray(v) ? v : Object.values(v);
+        localStorage.setItem('dp_tasks', JSON.stringify(toArr(remote.tasks)));
+        localStorage.setItem('dp_log',   JSON.stringify(toArr(remote.log)));
+        if (remote.timer) localStorage.setItem('dp_timer', JSON.stringify(remote.timer));
+        else localStorage.removeItem('dp_timer');
+        renderTabs();
+        renderContent();
+      }).catch(() => {});
+    });
+  } catch(e) {}
+})();
+
+function pushLogToFirebase() {
+  if (!_fbDB) return;
+  const tasks = JSON.parse(localStorage.getItem('dp_tasks') || '[]');
+  const log   = JSON.parse(localStorage.getItem('dp_log')   || '[]');
+  const timer = JSON.parse(localStorage.getItem('dp_timer') || 'null');
+  _fbDB.ref('planner').set({ tasks, log, timer }).catch(() => {});
+}
+
 const CATEGORIES = {
   work:     { label: '仕事',  color: '#27ae60', bg: '#eafaf1' },
   study:    { label: '勉強',  color: '#e74c3c', bg: '#fdedec' },
@@ -444,6 +490,7 @@ function saveLogEdit(entryId) {
   if (entry) {
     entry.duration = newDur;
     localStorage.setItem('dp_log', JSON.stringify(log));
+    pushLogToFirebase();
   }
   renderContent();
 }
@@ -451,6 +498,7 @@ function saveLogEdit(entryId) {
 function clearDay() {
   if (!confirm(`${formatDateLabel(selectedDate)}のログを削除しますか？`)) return;
   DB.clearLog(selectedDate);
+  pushLogToFirebase();
   renderTabs();
   renderContent();
 }
