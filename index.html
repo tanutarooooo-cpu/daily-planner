@@ -30,21 +30,14 @@
     .header-date { font-size: 11px; color: #aaa; letter-spacing: 0.5px; }
     .header-title { font-size: 22px; font-weight: 800; }
     .header-stats { font-size: 12px; color: #52b788; margin-top: 1px; font-weight: 500; }
+    .header-right { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
     .add-btn {
-      background: #52b788;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
+      background: #52b788; color: white; border: none;
+      border-radius: 8px; padding: 8px 16px; font-size: 13px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
       flex-shrink: 0;
-      margin-bottom: 2px;
     }
     .add-btn:hover { background: #40a372; }
-    .header-right { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
     .zoom-btn {
       background: #f0ede8; color: #555; border: none;
       border-radius: 6px; width: 30px; height: 30px;
@@ -56,35 +49,22 @@
 
     /* Top nav */
     .top-nav {
-      display: flex;
-      background: #fff;
-      border-bottom: 1px solid #ece9e3;
-      flex-shrink: 0;
+      display: flex; background: #fff;
+      border-bottom: 1px solid #ece9e3; flex-shrink: 0;
     }
     .nav-item {
-      flex: 1;
-      padding: 10px 0 8px;
-      text-align: center;
-      text-decoration: none;
-      color: #bbb;
-      font-size: 12px;
-      font-weight: 600;
-      border-bottom: 2px solid transparent;
-      letter-spacing: 0.3px;
+      flex: 1; padding: 10px 0 8px; text-align: center;
+      text-decoration: none; color: #bbb; font-size: 12px; font-weight: 600;
+      border-bottom: 2px solid transparent; letter-spacing: 0.3px;
     }
     .nav-item.active { color: #52b788; border-bottom-color: #52b788; }
     .nav-item:hover:not(.active) { color: #888; }
 
     /* Active banner */
     .active-banner {
-      background: #2d6a4f;
-      color: white;
-      padding: 8px 24px;
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      cursor: pointer;
+      background: #2d6a4f; color: white; padding: 8px 24px;
+      display: none; align-items: center; justify-content: space-between;
+      flex-shrink: 0; cursor: pointer;
     }
     .active-banner.visible { display: flex; }
     .banner-task { font-size: 13px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -92,81 +72,65 @@
     .banner-timer { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
     .banner-timer.overtime { color: #fca311; }
     .banner-stop {
-      font-size: 11px;
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: white;
-      border-radius: 6px;
-      padding: 3px 10px;
-      cursor: pointer;
-      font-weight: 600;
-      font-family: inherit;
+      font-size: 11px; background: rgba(255,255,255,0.2); border: none;
+      color: white; border-radius: 6px; padding: 3px 10px;
+      cursor: pointer; font-weight: 600; font-family: inherit;
+    }
+
+    /* ===== 2-COLUMN LAYOUT ===== */
+    .main-layout {
+      flex: 1; display: flex; overflow: hidden;
+    }
+    .left-col {
+      flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0;
+    }
+    .right-col {
+      width: 300px; flex-shrink: 0;
+      border-left: 1px solid #ece9e3;
+      background: #fff;
+      overflow-y: auto;
+      display: flex; flex-direction: column;
+    }
+    @media (max-width: 860px) {
+      .right-col { display: none; }
     }
 
     /* Timeline */
     .timeline-container {
-      flex: 1;
-      overflow-y: auto;
-      position: relative;
+      flex: 1; overflow-y: auto; position: relative;
     }
     .timeline {
-      position: relative;
-      margin-left: 56px;
-      margin-right: 16px;
-      max-width: 680px;
-      height: 1440px;
+      position: relative; margin-left: 56px; margin-right: 16px;
+      max-width: 680px; height: 1440px;
     }
 
     /* Hour lines */
     .hour-line {
-      position: absolute;
-      left: -56px;
-      right: 0;
-      display: flex;
-      align-items: flex-start;
-      pointer-events: none;
+      position: absolute; left: -56px; right: 0;
+      display: flex; align-items: flex-start; pointer-events: none;
     }
     .hour-label {
-      width: 48px;
-      font-size: 10px;
-      color: #bbb;
-      text-align: right;
-      padding-right: 8px;
-      line-height: 1;
-      margin-top: -5px;
-      flex-shrink: 0;
-      font-variant-numeric: tabular-nums;
+      width: 48px; font-size: 10px; color: #bbb; text-align: right;
+      padding-right: 8px; line-height: 1; margin-top: -5px;
+      flex-shrink: 0; font-variant-numeric: tabular-nums;
     }
     .hour-tick { flex: 1; border-top: 1px solid #e8e4dd; }
     .hour-line.half .hour-tick { border-top-style: dashed; border-top-color: #f0ece6; }
 
     /* Now line */
     .now-line {
-      position: absolute;
-      left: -56px;
-      right: 0;
-      display: flex;
-      align-items: center;
-      pointer-events: none;
-      z-index: 10;
+      position: absolute; left: -56px; right: 0;
+      display: flex; align-items: center; pointer-events: none; z-index: 10;
     }
     .now-dot { width: 9px; height: 9px; background: #e74c3c; border-radius: 50%; margin-left: 43px; flex-shrink: 0; }
     .now-tick { flex: 1; border-top: 2px solid #e74c3c; }
 
     /* Task blocks */
     .task-block {
-      position: absolute;
-      left: 3px;
-      right: 0;
-      border-radius: 7px;
-      padding: 4px 10px;
-      cursor: grab;
-      min-height: 28px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      z-index: 5;
-      transition: transform 0.1s, box-shadow 0.1s;
+      position: absolute; left: 3px; right: 0;
+      border-radius: 7px; padding: 4px 10px; cursor: grab; min-height: 28px;
+      display: flex; flex-direction: column; justify-content: center;
+      z-index: 5; transition: transform 0.1s, box-shadow 0.1s;
     }
     .task-block:hover { transform: translateX(1px); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
     .task-block.pending { background: #eaf5ee; border-left: 3px solid #74c69d; }
@@ -193,6 +157,78 @@
     .task-block.completed .resize-handle,
     .task-block.skipped .resize-handle { display: none; }
 
+    /* ===== STATS PANEL ===== */
+    .stats-panel { display: flex; flex-direction: column; flex: 1; }
+
+    .stats-tabs {
+      display: flex; border-bottom: 1px solid #ece9e3; flex-shrink: 0;
+    }
+    .stats-tab {
+      flex: 1; padding: 11px 0 9px; border: none; background: none;
+      font-size: 12px; font-weight: 600; color: #bbb; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      font-family: inherit; letter-spacing: 0.3px;
+    }
+    .stats-tab.active { color: #52b788; border-bottom-color: #52b788; }
+    .stats-tab:hover:not(.active) { color: #888; }
+
+    .stats-body { padding: 16px; flex: 1; }
+
+    .stats-period {
+      font-size: 10px; color: #ccc; font-weight: 600;
+      letter-spacing: 0.4px; margin-bottom: 8px;
+    }
+    .stats-total-value {
+      font-size: 32px; font-weight: 200; color: #1a1a1a;
+      letter-spacing: -0.5px; line-height: 1;
+      margin-bottom: 4px; font-variant-numeric: tabular-nums;
+    }
+    .stats-total-sub {
+      font-size: 11px; color: #bbb; margin-bottom: 20px;
+    }
+
+    /* Mini trend bars (week / month) */
+    .trend-section { margin-bottom: 20px; }
+    .trend-label { font-size: 10px; color: #ccc; font-weight: 600; letter-spacing: 0.4px; margin-bottom: 8px; }
+    .trend-bars {
+      display: flex; align-items: flex-end; gap: 3px;
+      height: 52px;
+    }
+    .trend-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .trend-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+    .trend-bar-fill {
+      width: 100%; background: #b7e4c7; border-radius: 3px 3px 0 0;
+      min-height: 2px; transition: height 0.3s ease;
+    }
+    .trend-bar-fill.is-today { background: #52b788; }
+    .trend-bar-fill.is-this-week { background: #74c69d; }
+    .trend-bar-lbl { font-size: 9px; color: #ccc; margin-top: 4px; font-weight: 600; }
+    .trend-bar-lbl.is-today { color: #52b788; }
+    .trend-bar-lbl.is-this-week { color: #74c69d; }
+
+    /* Category rows */
+    .cat-section-label { font-size: 10px; color: #ccc; font-weight: 600; letter-spacing: 0.4px; margin-bottom: 10px; }
+    .cat-row { margin-bottom: 12px; }
+    .cat-row-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+    }
+    .cat-row-name {
+      font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+    }
+    .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .cat-row-time {
+      font-size: 11px; color: #888; font-variant-numeric: tabular-nums;
+    }
+    .cat-row-pct { font-size: 10px; color: #ccc; margin-left: 4px; }
+    .cat-bar-bg { height: 5px; background: #f0ede8; border-radius: 3px; overflow: hidden; }
+    .cat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+
+    .stats-empty {
+      text-align: center; padding: 40px 0;
+      font-size: 12px; color: #ccc;
+    }
+    .stats-empty-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.3; }
+
     /* Category picker */
     .cat-picker { display: flex; flex-wrap: wrap; gap: 6px; }
     .cat-pill {
@@ -205,61 +241,36 @@
 
     /* Modal overlay */
     .overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 100; display: none; align-items: center; justify-content: center;
     }
     .overlay.visible { display: flex; }
     .sheet {
-      background: white;
-      width: 440px;
-      max-width: calc(100vw - 40px);
-      border-radius: 16px;
-      padding: 28px 28px 28px;
+      background: white; width: 440px; max-width: calc(100vw - 40px);
+      border-radius: 16px; padding: 28px;
       animation: popIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
       box-shadow: 0 8px 40px rgba(0,0,0,0.18);
     }
     @keyframes popIn {
       from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+      to   { opacity: 1; transform: scale(1); }
     }
     .sheet-title { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
     .sheet-subtitle { font-size: 12px; color: #999; margin-bottom: 16px; }
-
     .timer-display {
-      text-align: center;
-      font-size: 60px;
-      font-weight: 200;
-      font-variant-numeric: tabular-nums;
-      color: #2d6a4f;
-      margin: 8px 0 20px;
-      letter-spacing: 2px;
-      line-height: 1;
+      text-align: center; font-size: 60px; font-weight: 200;
+      font-variant-numeric: tabular-nums; color: #2d6a4f;
+      margin: 8px 0 20px; letter-spacing: 2px; line-height: 1;
     }
     .timer-display.overtime { color: #e67e22; }
     .timer-label {
-      text-align: center;
-      font-size: 11px;
-      color: #bbb;
-      margin-top: -16px;
-      margin-bottom: 20px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+      text-align: center; font-size: 11px; color: #bbb;
+      margin-top: -16px; margin-bottom: 20px; font-weight: 600; letter-spacing: 0.5px;
     }
-
     .sheet-buttons { display: flex; gap: 10px; }
     .btn {
-      flex: 1;
-      padding: 13px 8px;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
+      flex: 1; padding: 13px 8px; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
       transition: opacity 0.15s, background 0.1s;
     }
     .btn:hover { opacity: 0.88; }
@@ -272,15 +283,9 @@
     .form-group { margin-bottom: 14px; }
     .form-label { font-size: 11px; color: #999; margin-bottom: 4px; display: block; font-weight: 600; letter-spacing: 0.3px; }
     .form-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #e8e4dd;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-      font-family: inherit;
-      background: #faf9f7;
-      transition: border-color 0.15s;
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e8e4dd;
+      border-radius: 8px; font-size: 14px; outline: none;
+      font-family: inherit; background: #faf9f7; transition: border-color 0.15s;
     }
     .form-input:focus { border-color: #52b788; background: #fff; }
     .form-row { display: flex; gap: 10px; }
@@ -326,8 +331,22 @@
     </div>
   </div>
 
-  <div class="timeline-container" id="timelineContainer">
-    <div class="timeline" id="timeline"></div>
+  <div class="main-layout">
+    <div class="left-col">
+      <div class="timeline-container" id="timelineContainer">
+        <div class="timeline" id="timeline"></div>
+      </div>
+    </div>
+    <div class="right-col">
+      <div class="stats-panel">
+        <div class="stats-tabs">
+          <button class="stats-tab active" data-tab="day"  onclick="switchStatsTab('day')">日次</button>
+          <button class="stats-tab"        data-tab="week" onclick="switchStatsTab('week')">週次</button>
+          <button class="stats-tab"        data-tab="month" onclick="switchStatsTab('month')">月次</button>
+        </div>
+        <div class="stats-body" id="statsBody"></div>
+      </div>
+    </div>
   </div>
 
   <div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
@@ -350,11 +369,12 @@ const DB = {
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const pad = n => String(n).padStart(2, '0');
+const fmtMins = m => m >= 60 ? `${Math.floor(m/60)}h ${m%60 ? (m%60)+'m' : ''}`.trim() : `${m}m`;
 
 // ===== ZOOM =====
 const ZOOM_LEVELS = [0.5, 1, 1.5, 2, 3];
 let zoomIndex = parseInt(localStorage.getItem('dp_zoom') || '1');
-let PX_PER_MIN = () => ZOOM_LEVELS[zoomIndex];
+const PX_PER_MIN = () => ZOOM_LEVELS[zoomIndex];
 
 function changeZoom(delta) {
   zoomIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, zoomIndex + delta));
@@ -365,11 +385,11 @@ function changeZoom(delta) {
 }
 
 const CATEGORIES = {
-  work:     { label: '仕事',  color: '#27ae60', bg: '#eafaf1' },
-  study:    { label: '勉強',  color: '#e74c3c', bg: '#fdedec' },
-  exercise: { label: '運動',  color: '#f39c12', bg: '#fef9e7' },
-  break:    { label: '休憩',  color: '#3498db', bg: '#eaf4fb' },
-  personal: { label: '個人',  color: '#9b59b6', bg: '#f5eef8' },
+  work:     { label: '仕事',   color: '#27ae60', bg: '#eafaf1' },
+  study:    { label: '勉強',   color: '#e74c3c', bg: '#fdedec' },
+  exercise: { label: '運動',   color: '#f39c12', bg: '#fef9e7' },
+  break:    { label: '休憩',   color: '#3498db', bg: '#eaf4fb' },
+  personal: { label: '個人',   color: '#9b59b6', bg: '#f5eef8' },
   other:    { label: 'その他', color: '#7f8c8d', bg: '#f2f3f4' },
 };
 
@@ -377,7 +397,6 @@ const CATEGORIES = {
 function buildTimeline() {
   const tl = document.getElementById('timeline');
   tl.innerHTML = '';
-
   const Z = PX_PER_MIN();
   tl.style.height = (1440 * Z) + 'px';
   document.getElementById('zoomLabel').textContent = Z + 'x';
@@ -411,7 +430,6 @@ function buildTimeline() {
     block.style.top = top + 'px';
     block.style.height = height + 'px';
 
-    // Category color (pending/running only)
     const cat = t.category ? CATEGORIES[t.category] : null;
     if (cat && !t.completed && !t.skipped && !isRunning) {
       block.style.background = cat.bg;
@@ -457,7 +475,171 @@ function updateHeader() {
     tasks.length > 0 ? `${done} / ${tasks.length} 完了` : 'タスクなし';
 }
 
-// ===== TIMER (countdown) =====
+// ===== STATS PANEL =====
+let statsTab = 'day';
+
+function switchStatsTab(tab) {
+  statsTab = tab;
+  document.querySelectorAll('.stats-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  renderStats();
+}
+
+function getDateRange(tab) {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  if (tab === 'day') return [today, today];
+  if (tab === 'week') {
+    const dow = now.getDay();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((dow + 6) % 7));
+    mon.setHours(0, 0, 0, 0);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return [mon.toISOString().slice(0, 10), sun.toISOString().slice(0, 10)];
+  }
+  if (tab === 'month') {
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+    return [`${y}-${m}-01`, `${y}-${m}-${String(lastDay).padStart(2, '0')}`];
+  }
+}
+
+function buildTrendBars(from, to, granularity) {
+  const logs = DB.getLog();
+  const cols = [];
+
+  if (granularity === 'day') {
+    const DAY_JP = ['月','火','水','木','金','土','日'];
+    let d = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    let idx = 0;
+    while (d <= end) {
+      const dateStr = d.toISOString().slice(0, 10);
+      const mins = logs.filter(e => e.date === dateStr).reduce((s, e) => s + (e.duration || 0), 0);
+      const dow = d.getDay();
+      cols.push({ label: DAY_JP[(dow + 6) % 7], mins, isToday: dateStr === TODAY });
+      d.setDate(d.getDate() + 1);
+      idx++;
+    }
+  } else {
+    // granularity === 'week' (for monthly view: show weekly totals)
+    let d = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    let weekIdx = 1;
+    while (d <= end) {
+      const weekStart = d.toISOString().slice(0, 10);
+      const weekEnd = new Date(d);
+      weekEnd.setDate(d.getDate() + 6);
+      const weekEndStr = weekEnd > end ? to : weekEnd.toISOString().slice(0, 10);
+      const mins = logs.filter(e => e.date >= weekStart && e.date <= weekEndStr)
+        .reduce((s, e) => s + (e.duration || 0), 0);
+      const containsToday = TODAY >= weekStart && TODAY <= weekEndStr;
+      cols.push({ label: `W${weekIdx}`, mins, isToday: containsToday });
+      d.setDate(d.getDate() + 7);
+      weekIdx++;
+    }
+  }
+
+  if (cols.every(c => c.mins === 0)) return '';
+
+  const maxMins = Math.max(...cols.map(c => c.mins), 1);
+  const bars = cols.map(c => {
+    const h = Math.max(2, Math.round((c.mins / maxMins) * 44));
+    const cls = c.isToday ? 'is-today' : '';
+    return `<div class="trend-bar-col">
+      <div class="trend-bar-wrap"><div class="trend-bar-fill ${cls}" style="height:${h}px"></div></div>
+      <div class="trend-bar-lbl ${cls}">${c.label}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="trend-section">
+    <div class="trend-label">${granularity === 'day' ? '曜日別' : '週別'} 作業時間</div>
+    <div class="trend-bars">${bars}</div>
+  </div>`;
+}
+
+function renderStats() {
+  const body = document.getElementById('statsBody');
+  if (!body) return;
+
+  const [from, to] = getDateRange(statsTab);
+  const logs = DB.getLog().filter(e => e.date >= from && e.date <= to);
+
+  const totals = {};
+  let grandTotal = 0;
+  logs.forEach(e => {
+    const cat = e.category || 'other';
+    totals[cat] = (totals[cat] || 0) + (e.duration || 0);
+    grandTotal += (e.duration || 0);
+  });
+
+  const periodLabels = {
+    day: '今日',
+    week: '今週',
+    month: '今月',
+  };
+
+  const now = new Date();
+  let periodSub = '';
+  if (statsTab === 'week') {
+    const [f, t] = getDateRange('week');
+    periodSub = `${f.slice(5).replace('-','/')} 〜 ${t.slice(5).replace('-','/')}`;
+  } else if (statsTab === 'month') {
+    periodSub = `${now.getFullYear()}年${now.getMonth()+1}月`;
+  } else {
+    const days = ['日','月','火','水','木','金','土'];
+    periodSub = `${now.getMonth()+1}/${now.getDate()}（${days[now.getDay()]}）`;
+  }
+
+  if (grandTotal === 0) {
+    body.innerHTML = `
+      <div class="stats-period">${periodLabels[statsTab]}　${periodSub}</div>
+      <div class="stats-empty">
+        <div class="stats-empty-icon">📊</div>
+        まだ記録がありません
+      </div>`;
+    return;
+  }
+
+  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+
+  const trendHTML = statsTab === 'week'
+    ? buildTrendBars(from, to, 'day')
+    : statsTab === 'month'
+    ? buildTrendBars(from, to, 'week')
+    : '';
+
+  const catRows = sorted.map(([key, mins]) => {
+    const cat = CATEGORIES[key] || CATEGORIES.other;
+    const pct = Math.round((mins / grandTotal) * 100);
+    return `<div class="cat-row">
+      <div class="cat-row-header">
+        <span class="cat-row-name">
+          <span class="cat-dot" style="background:${cat.color}"></span>
+          ${cat.label}
+        </span>
+        <span class="cat-row-time">${fmtMins(mins)}<span class="cat-row-pct">${pct}%</span></span>
+      </div>
+      <div class="cat-bar-bg">
+        <div class="cat-bar-fill" style="width:${pct}%;background:${cat.color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="stats-period">${periodLabels[statsTab]}　${periodSub}</div>
+    <div class="stats-total-value">${fmtMins(grandTotal)}</div>
+    <div class="stats-total-sub">${logs.length}件のログ</div>
+    ${trendHTML}
+    <div class="cat-section-label">カテゴリ別</div>
+    ${catRows}
+  `;
+}
+
+// ===== TIMER =====
 let timerTick = null;
 
 function startTicking() {
@@ -473,17 +655,9 @@ function tickTimer() {
     return;
   }
   const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-  const scheduled = (state.scheduledSecs || 0);
-  const remaining = scheduled - elapsed;
-
-  let display, isOvertime;
-  if (remaining > 0) {
-    display = formatSecs(remaining);
-    isOvertime = false;
-  } else {
-    display = '+' + formatSecs(-remaining);
-    isOvertime = true;
-  }
+  const remaining = (state.scheduledSecs || 0) - elapsed;
+  const isOvertime = remaining < 0;
+  const display = isOvertime ? '+' + formatSecs(-remaining) : formatSecs(remaining);
 
   const banner = document.getElementById('activeBanner');
   banner.classList.add('visible');
@@ -494,7 +668,6 @@ function tickTimer() {
   const task = DB.getTasks().find(t => t.id === state.taskId);
   if (task) document.getElementById('bannerTask').textContent = task.title;
 
-  // Update sheet timer if open
   const sheetTimer = document.getElementById('sheetTimer');
   if (sheetTimer) {
     sheetTimer.textContent = display;
@@ -517,11 +690,8 @@ function startTask(taskId) {
   const task = tasks.find(t => t.id === taskId);
   const existing = DB.getTimer();
   if (existing) stopTimer(existing.taskId, false);
-
   DB.saveTimer({ taskId, startTime: Date.now(), scheduledSecs: (task?.duration || 30) * 60 });
-  closeSheet();
-  buildTimeline();
-  startTicking();
+  closeSheet(); buildTimeline(); startTicking();
   setTimeout(() => openTaskSheet(taskId), 60);
 }
 
@@ -529,7 +699,6 @@ function completeTask(taskId) {
   const state = DB.getTimer();
   const now = Date.now();
   const elapsed = state ? Math.floor((now - state.startTime) / 1000) : 0;
-
   const tasks = DB.getTasks();
   const task = tasks.find(t => t.id === taskId);
   if (task) {
@@ -546,13 +715,10 @@ function completeTask(taskId) {
     task.actualDuration = Math.max(1, Math.ceil(elapsed / 60));
     DB.saveTasks(tasks);
   }
-
   DB.saveTimer(null);
   clearInterval(timerTick);
   document.getElementById('activeBanner').classList.remove('visible');
-  closeSheet();
-  buildTimeline();
-  updateHeader();
+  closeSheet(); buildTimeline(); updateHeader(); renderStats();
 }
 
 function completeActive() {
@@ -572,7 +738,7 @@ function stopTimer(taskId, logIt = true) {
     const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
     if (elapsed > 0) {
       const task = DB.getTasks().find(t => t.id === taskId);
-      if (task) DB.addLog({ id: uid(), taskId, title: task.title, date: TODAY, startTime: state.startTime, endTime: Date.now(), duration: Math.max(1, Math.ceil(elapsed / 60)), scheduled: task.duration });
+      if (task) DB.addLog({ id: uid(), taskId, title: task.title, date: TODAY, category: task.category || null, startTime: state.startTime, endTime: Date.now(), duration: Math.max(1, Math.ceil(elapsed / 60)), scheduled: task.duration });
     }
   }
   DB.saveTimer(null);
@@ -581,13 +747,8 @@ function stopTimer(taskId, logIt = true) {
 function uncompleteTask(taskId) {
   const tasks = DB.getTasks();
   const task = tasks.find(t => t.id === taskId);
-  if (task) {
-    task.completed = false;
-    task.skipped = false;
-    delete task.actualDuration;
-    DB.saveTasks(tasks);
-  }
-  closeSheet(); buildTimeline(); updateHeader();
+  if (task) { task.completed = false; task.skipped = false; delete task.actualDuration; DB.saveTasks(tasks); }
+  closeSheet(); buildTimeline(); updateHeader(); renderStats();
 }
 
 function skipTask(taskId) {
@@ -601,7 +762,10 @@ function deleteTask(taskId) {
   if (!confirm('このタスクを削除しますか？')) return;
   DB.saveTasks(DB.getTasks().filter(t => t.id !== taskId));
   const s = DB.getTimer();
-  if (s && s.taskId === taskId) { DB.saveTimer(null); clearInterval(timerTick); document.getElementById('activeBanner').classList.remove('visible'); }
+  if (s && s.taskId === taskId) {
+    DB.saveTimer(null); clearInterval(timerTick);
+    document.getElementById('activeBanner').classList.remove('visible');
+  }
   closeSheet(); buildTimeline(); updateHeader();
 }
 
@@ -688,9 +852,7 @@ function openAddSheet() {
 
 function selectCat(btn) {
   document.querySelectorAll('.cat-pill').forEach(b => {
-    b.classList.remove('selected');
-    b.style.background = 'white';
-    b.style.color = '#888';
+    b.classList.remove('selected'); b.style.background = 'white'; b.style.color = '#888';
   });
   const cat = CATEGORIES[btn.dataset.cat];
   if (document.getElementById('newCategory').value === btn.dataset.cat) {
@@ -724,7 +886,6 @@ function addDragBehavior(block, taskId, initialTop) {
   block.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
-
     const startMouseY = e.clientY;
     let currentTop = initialTop;
     let moved = false;
@@ -732,25 +893,18 @@ function addDragBehavior(block, taskId, initialTop) {
     const onMove = (e) => {
       const dy = e.clientY - startMouseY;
       if (!moved && Math.abs(dy) < 5) return;
-
       if (!moved) {
         moved = true;
-        block.style.opacity = '0.82';
-        block.style.zIndex = '20';
+        block.style.opacity = '0.82'; block.style.zIndex = '20';
         block.style.boxShadow = '0 6px 20px rgba(0,0,0,0.18)';
-        block.style.cursor = 'grabbing';
-        block.style.transition = 'none';
+        block.style.cursor = 'grabbing'; block.style.transition = 'none';
         document.body.style.cursor = 'grabbing';
         document.body.style.userSelect = 'none';
       }
-
-      // Snap to 5-min grid while dragging
       const Z = PX_PER_MIN();
       const raw = Math.max(0, Math.min(1435 * Z, initialTop + dy));
       currentTop = Math.round(raw / (5 * Z)) * (5 * Z);
       block.style.top = currentTop + 'px';
-
-      // Update time label live
       const meta = block.querySelector('.task-meta');
       if (meta) {
         const task = DB.getTasks().find(t => t.id === taskId);
@@ -762,22 +916,14 @@ function addDragBehavior(block, taskId, initialTop) {
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-
-      if (!moved) {
-        openTaskSheet(taskId);
-        return;
-      }
-
-      // Save new scheduledTime
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
+      if (!moved) { openTaskSheet(taskId); return; }
       const Z2 = PX_PER_MIN();
       const mins2 = currentTop / Z2;
       const newTime = `${pad(Math.floor(mins2/60))}:${pad(Math.floor(mins2)%60)}`;
       const tasks = DB.getTasks();
       const task = tasks.find(t => t.id === taskId);
       if (task) { task.scheduledTime = newTime; DB.saveTasks(tasks); }
-
       buildTimeline();
     };
 
@@ -792,8 +938,7 @@ function addResizeBehavior(block, taskId, initialHeight) {
   block.appendChild(handle);
 
   handle.addEventListener('mousedown', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
+    e.stopPropagation(); e.preventDefault();
     const startY = e.clientY;
     const Z = PX_PER_MIN();
     let newDurMin = Math.round(initialHeight / Z);
@@ -814,8 +959,7 @@ function addResizeBehavior(block, taskId, initialHeight) {
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = ''; document.body.style.userSelect = '';
       const tasks = DB.getTasks();
       const task = tasks.find(t => t.id === taskId);
       if (task) { task.duration = newDurMin; DB.saveTasks(tasks); }
@@ -830,15 +974,13 @@ function addResizeBehavior(block, taskId, initialHeight) {
 // ===== UTILS =====
 function mkEl(tag, cls, html = '') {
   const e = document.createElement(tag);
-  e.className = cls;
-  if (html) e.innerHTML = html;
-  return e;
+  e.className = cls; if (html) e.innerHTML = html; return e;
 }
 
 // ===== INIT =====
 buildTimeline();
 updateHeader();
-
+renderStats();
 scrollToNow();
 
 if (DB.getTimer()) startTicking();
