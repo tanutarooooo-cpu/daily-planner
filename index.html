@@ -312,7 +312,7 @@
       <div class="header-stats" id="headerStats"></div>
     </div>
     <div class="header-right">
-      <span id="syncDot" title="Firebase未設定" style="font-size:9px;color:#ddd;cursor:default;flex-shrink:0">⬤</span>
+      <span id="syncDot" title="クリックで同期状況" onclick="openSyncSheet()" style="font-size:9px;color:#ddd;cursor:pointer;flex-shrink:0">⬤</span>
       <button class="zoom-btn" onclick="changeZoom(-1)">－</button>
       <span class="zoom-label" id="zoomLabel">1x</span>
       <button class="zoom-btn" onclick="changeZoom(+1)">＋</button>
@@ -398,8 +398,8 @@ function initFirebase() {
         applyRemoteData(remote);
         buildTimeline(); updateHeader(); renderStats(); scrollToNow();
       } else if (DB.getTasks().length > 0) {
-        // Firebaseが空 かつ ローカルにデータあり → Firebaseへ初回アップロード
-        saveToFirebase();
+        // Firebaseが空 かつ ローカルにデータあり → Firebaseへ即時アップロード（デバウンスなし）
+        saveToFirebase(true);
       }
       setSyncDot('ok');
 
@@ -426,21 +426,81 @@ function applyRemoteData(remote) {
     : localStorage.removeItem('dp_timer');
 }
 
-function saveToFirebase() {
-  if (!_fbDB) return;
+function saveToFirebase(immediate = false) {
+  if (!_fbDB) return Promise.resolve();
   clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(() => {
+  const doSave = () => {
     _isSyncing = true;
     setSyncDot('syncing');
-    _fbDB.ref('planner').set({
+    return _fbDB.ref('planner').set({
       tasks: DB.getTasks(),
       log:   DB.getLog(),
       timer: DB.getTimer(),
     }).then(() => {
       setSyncDot('ok');
       setTimeout(() => { _isSyncing = false; }, 400);
-    }).catch(() => { setSyncDot('error'); _isSyncing = false; });
-  }, 600); // 600ms デバウンス（ドラッグ中の連続書き込みを防ぐ）
+    }).catch((err) => {
+      console.error('Firebase save error:', err);
+      setSyncDot('error');
+      _isSyncing = false;
+      throw err;
+    });
+  };
+  if (immediate) return doSave();
+  return new Promise(resolve => {
+    _syncTimer = setTimeout(() => doSave().then(resolve).catch(resolve), 600);
+  });
+}
+
+// 同期状況パネル
+function openSyncSheet() {
+  const tasks = DB.getTasks();
+  const logs  = DB.getLog();
+  const fbStatus = _fbDB ? '✅ 接続済み' : '❌ 未接続';
+
+  document.getElementById('sheetContent').innerHTML = `
+    <div class="sheet-title">Firebase同期</div>
+    <div class="sheet-subtitle">${fbStatus}</div>
+    <div style="background:#f8f7f4;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;line-height:1.7">
+      <div><b>このPC（ローカル）</b></div>
+      <div style="color:#666">タスク: ${tasks.length}件 / ログ: ${logs.length}件</div>
+      <div style="color:#999;font-size:11px;margin-top:6px">今日 (${TODAY}) のタスク: ${tasks.filter(t => t.date === TODAY).length}件</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+      <button class="btn btn-primary" onclick="forcePush()">↑ Firebaseに今すぐ送信</button>
+      <button class="btn btn-success" onclick="forcePull()">↓ Firebaseから今すぐ受信</button>
+      <button class="btn btn-muted" style="flex:1" onclick="closeSheet()">閉じる</button>
+    </div>
+    <div style="font-size:10px;color:#bbb;text-align:center;margin-top:8px">
+      ※「送信」は別PCに反映するため<br>「受信」は別PCの最新データを取り込むため
+    </div>
+  `;
+  showOverlay();
+}
+
+function forcePush() {
+  if (!_fbDB) { alert('Firebase未接続です'); return; }
+  setSyncDot('syncing');
+  saveToFirebase(true).then(() => {
+    const n = DB.getTasks().length;
+    alert(`送信完了：タスク${n}件をFirebaseへアップロードしました`);
+    closeSheet();
+  }).catch((e) => alert('送信エラー：' + (e?.message || e)));
+}
+
+function forcePull() {
+  if (!_fbDB) { alert('Firebase未接続です'); return; }
+  setSyncDot('syncing');
+  _fbDB.ref('planner').once('value').then(snap => {
+    const remote = snap.val();
+    if (!remote) { setSyncDot('ok'); alert('Firebaseにはまだデータがありません'); return; }
+    applyRemoteData(remote);
+    buildTimeline(); updateHeader(); renderStats(); scrollToNow();
+    setSyncDot('ok');
+    const n = DB.getTasks().length;
+    alert(`受信完了：タスク${n}件をFirebaseから取り込みました`);
+    closeSheet();
+  }).catch(e => { setSyncDot('error'); alert('受信エラー：' + (e?.message || e)); });
 }
 
 function setSyncDot(status) {
