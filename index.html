@@ -44,6 +44,15 @@
       margin-bottom: 2px;
     }
     .add-btn:hover { background: #40a372; }
+    .header-right { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+    .zoom-btn {
+      background: #f0ede8; color: #555; border: none;
+      border-radius: 6px; width: 30px; height: 30px;
+      font-size: 16px; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .zoom-btn:hover { background: #e0dcd5; }
+    .zoom-label { font-size: 11px; color: #aaa; font-weight: 600; min-width: 28px; text-align: center; }
 
     /* Top nav */
     .top-nav {
@@ -295,7 +304,12 @@
       <div class="header-title">Today</div>
       <div class="header-stats" id="headerStats"></div>
     </div>
-    <button class="add-btn" onclick="openAddSheet()">＋ タスク追加</button>
+    <div class="header-right">
+      <button class="zoom-btn" onclick="changeZoom(-1)">－</button>
+      <span class="zoom-label" id="zoomLabel">1x</span>
+      <button class="zoom-btn" onclick="changeZoom(+1)">＋</button>
+      <button class="add-btn" onclick="openAddSheet()">＋ タスク追加</button>
+    </div>
   </div>
 
   <nav class="top-nav">
@@ -337,6 +351,19 @@ const DB = {
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const pad = n => String(n).padStart(2, '0');
 
+// ===== ZOOM =====
+const ZOOM_LEVELS = [0.5, 1, 1.5, 2, 3];
+let zoomIndex = parseInt(localStorage.getItem('dp_zoom') || '1');
+let PX_PER_MIN = () => ZOOM_LEVELS[zoomIndex];
+
+function changeZoom(delta) {
+  zoomIndex = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, zoomIndex + delta));
+  localStorage.setItem('dp_zoom', zoomIndex);
+  document.getElementById('zoomLabel').textContent = ZOOM_LEVELS[zoomIndex] + 'x';
+  buildTimeline();
+  scrollToNow();
+}
+
 const CATEGORIES = {
   work:     { label: '仕事',  color: '#27ae60', bg: '#eafaf1' },
   study:    { label: '勉強',  color: '#e74c3c', bg: '#fdedec' },
@@ -351,13 +378,17 @@ function buildTimeline() {
   const tl = document.getElementById('timeline');
   tl.innerHTML = '';
 
+  const Z = PX_PER_MIN();
+  tl.style.height = (1440 * Z) + 'px';
+  document.getElementById('zoomLabel').textContent = Z + 'x';
+
   for (let h = 0; h < 24; h++) {
-    const y = h * 60;
+    const y = h * 60 * Z;
     const hl = mkEl('div', 'hour-line', `<span class="hour-label">${pad(h)}:00</span><div class="hour-tick"></div>`);
     hl.style.top = y + 'px';
     tl.appendChild(hl);
     const hl2 = mkEl('div', 'hour-line half', `<span class="hour-label"></span><div class="hour-tick"></div>`);
-    hl2.style.top = (y + 30) + 'px';
+    hl2.style.top = (y + 30 * Z) + 'px';
     tl.appendChild(hl2);
   }
 
@@ -372,8 +403,8 @@ function buildTimeline() {
   tasks.forEach(t => {
     const isRunning = timer && timer.taskId === t.id;
     const [h, m] = t.scheduledTime.split(':').map(Number);
-    const top = h * 60 + m;
-    const height = Math.max(t.duration || 30, 28);
+    const top = (h * 60 + m) * Z;
+    const height = Math.max((t.duration || 30) * Z, 28);
     const cls = t.completed ? 'completed' : t.skipped ? 'skipped' : isRunning ? 'running' : 'pending';
     const icon = t.completed ? ' ✓' : t.skipped ? ' —' : '';
     const block = mkEl('div', `task-block ${cls}`);
@@ -402,9 +433,16 @@ function placeNowLine(container) {
   document.querySelector('.now-line')?.remove();
   const now = new Date();
   const mins = now.getHours() * 60 + now.getMinutes();
+  const Z = PX_PER_MIN();
   const line = mkEl('div', 'now-line', `<div class="now-dot"></div><div class="now-tick"></div>`);
-  line.style.top = mins + 'px';
+  line.style.top = (mins * Z) + 'px';
   (container || document.getElementById('timeline')).appendChild(line);
+}
+
+function scrollToNow() {
+  const Z = PX_PER_MIN();
+  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+  document.getElementById('timelineContainer').scrollTop = Math.max(0, nowMins * Z - 120);
 }
 
 // ===== HEADER =====
@@ -707,15 +745,17 @@ function addDragBehavior(block, taskId, initialTop) {
       }
 
       // Snap to 5-min grid while dragging
-      const raw = Math.max(0, Math.min(1435, initialTop + dy));
-      currentTop = Math.round(raw / 5) * 5;
+      const Z = PX_PER_MIN();
+      const raw = Math.max(0, Math.min(1435 * Z, initialTop + dy));
+      currentTop = Math.round(raw / (5 * Z)) * (5 * Z);
       block.style.top = currentTop + 'px';
 
       // Update time label live
       const meta = block.querySelector('.task-meta');
       if (meta) {
         const task = DB.getTasks().find(t => t.id === taskId);
-        meta.textContent = `${pad(Math.floor(currentTop/60))}:${pad(currentTop%60)} · ${task?.duration||30}分`;
+        const mins = currentTop / Z;
+        meta.textContent = `${pad(Math.floor(mins/60))}:${pad(Math.floor(mins)%60)} · ${task?.duration||30}分`;
       }
     };
 
@@ -731,7 +771,9 @@ function addDragBehavior(block, taskId, initialTop) {
       }
 
       // Save new scheduledTime
-      const newTime = `${pad(Math.floor(currentTop/60))}:${pad(currentTop%60)}`;
+      const Z2 = PX_PER_MIN();
+      const mins2 = currentTop / Z2;
+      const newTime = `${pad(Math.floor(mins2/60))}:${pad(Math.floor(mins2)%60)}`;
       const tasks = DB.getTasks();
       const task = tasks.find(t => t.id === taskId);
       if (task) { task.scheduledTime = newTime; DB.saveTasks(tasks); }
@@ -753,18 +795,19 @@ function addResizeBehavior(block, taskId, initialHeight) {
     e.stopPropagation();
     e.preventDefault();
     const startY = e.clientY;
-    let newDur = initialHeight;
+    const Z = PX_PER_MIN();
+    let newDurMin = Math.round(initialHeight / Z);
     document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
 
     const onMove = (e) => {
       const dy = e.clientY - startY;
-      newDur = Math.max(15, Math.round((initialHeight + dy) / 5) * 5);
-      block.style.height = Math.max(28, newDur) + 'px';
+      newDurMin = Math.max(15, Math.round((initialHeight + dy) / (5 * Z)) * 5);
+      block.style.height = Math.max(28, newDurMin * Z) + 'px';
       const meta = block.querySelector('.task-meta');
       if (meta) {
         const task = DB.getTasks().find(t => t.id === taskId);
-        if (task) meta.textContent = `${task.scheduledTime} · ${newDur}分`;
+        if (task) meta.textContent = `${task.scheduledTime} · ${newDurMin}分`;
       }
     };
 
@@ -775,7 +818,7 @@ function addResizeBehavior(block, taskId, initialHeight) {
       document.body.style.userSelect = '';
       const tasks = DB.getTasks();
       const task = tasks.find(t => t.id === taskId);
-      if (task) { task.duration = newDur; DB.saveTasks(tasks); }
+      if (task) { task.duration = newDurMin; DB.saveTasks(tasks); }
       buildTimeline();
     };
 
@@ -796,8 +839,7 @@ function mkEl(tag, cls, html = '') {
 buildTimeline();
 updateHeader();
 
-const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
-document.getElementById('timelineContainer').scrollTop = Math.max(0, nowMins - 120);
+scrollToNow();
 
 if (DB.getTimer()) startTicking();
 
