@@ -540,6 +540,18 @@ function stopTimer(taskId, logIt = true) {
   DB.saveTimer(null);
 }
 
+function uncompleteTask(taskId) {
+  const tasks = DB.getTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.completed = false;
+    task.skipped = false;
+    delete task.actualDuration;
+    DB.saveTasks(tasks);
+  }
+  closeSheet(); buildTimeline(); updateHeader();
+}
+
 function skipTask(taskId) {
   const tasks = DB.getTasks();
   const t = tasks.find(t => t.id === taskId);
@@ -569,7 +581,8 @@ function openTaskSheet(taskId) {
 
   let buttons = '';
   if (task.completed || task.skipped) {
-    buttons = `<button class="btn btn-skip" style="flex:1" onclick="closeSheet()">閉じる</button>
+    buttons = `<button class="btn btn-primary" onclick="uncompleteTask('${taskId}')">↩ 元に戻す</button>
+               <button class="btn btn-skip" onclick="closeSheet()">閉じる</button>
                <button class="btn btn-muted" onclick="deleteTask('${taskId}')">削除</button>`;
   } else if (isRunning) {
     buttons = `<button class="btn btn-success" onclick="completeTask('${taskId}')">✓ 完了</button>
