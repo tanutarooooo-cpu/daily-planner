@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Today — プランナー</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -310,6 +312,7 @@
       <div class="header-stats" id="headerStats"></div>
     </div>
     <div class="header-right">
+      <span id="syncDot" title="Firebase未設定" style="font-size:9px;color:#ddd;cursor:default;flex-shrink:0">⬤</span>
       <button class="zoom-btn" onclick="changeZoom(-1)">－</button>
       <span class="zoom-label" id="zoomLabel">1x</span>
       <button class="zoom-btn" onclick="changeZoom(+1)">＋</button>
@@ -358,13 +361,97 @@
 <script>
 const TODAY = new Date().toISOString().slice(0, 10);
 
+// ================================================================
+// 🔥 FIREBASE設定
+// 下の {} の中にFirebaseコンソールからコピーした設定を貼り付けてください
+// ================================================================
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBkUnSciiuE1XWbrtBnJHzI68WJwcI1Z14",
+  authDomain: "my-planner-dd35c.firebaseapp.com",
+  databaseURL: "https://my-planner-dd35c-default-rtdb.firebaseio.com",
+  projectId: "my-planner-dd35c",
+  storageBucket: "my-planner-dd35c.firebasestorage.app",
+  messagingSenderId: "155300934760",
+  appId: "1:155300934760:web:9e058b3e07dfd99970b7dd"
+};
+// ================================================================
+
+// ===== FIREBASE SYNC =====
+let _fbDB = null;
+let _isSyncing = false;
+let _isDragging = false;
+let _syncTimer = null;
+
+function initFirebase() {
+  const cfg = window.FIREBASE_CONFIG;
+  if (!cfg || !cfg.apiKey) return;
+  try {
+    firebase.initializeApp(cfg);
+    _fbDB = firebase.database();
+    setSyncDot('loading');
+
+    // 起動時にFirebaseから最新データを取得
+    _fbDB.ref('planner').once('value').then(snap => {
+      const remote = snap.val();
+      if (remote) applyRemoteData(remote);
+      setSyncDot('ok');
+
+      // リアルタイムリスナー：他デバイスの変更を受信
+      _fbDB.ref('planner').on('value', snap => {
+        if (_isSyncing || _isDragging) return;
+        const remote = snap.val();
+        if (remote) { applyRemoteData(remote); buildTimeline(); updateHeader(); renderStats(); }
+      });
+    }).catch(() => setSyncDot('error'));
+  } catch(e) {
+    console.warn('Firebase init error:', e);
+    setSyncDot('error');
+  }
+}
+
+function applyRemoteData(remote) {
+  if (remote.tasks !== undefined) localStorage.setItem('dp_tasks', JSON.stringify(remote.tasks));
+  if (remote.log   !== undefined) localStorage.setItem('dp_log',   JSON.stringify(remote.log));
+  if (remote.timer !== undefined) {
+    remote.timer
+      ? localStorage.setItem('dp_timer', JSON.stringify(remote.timer))
+      : localStorage.removeItem('dp_timer');
+  }
+}
+
+function saveToFirebase() {
+  if (!_fbDB) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => {
+    _isSyncing = true;
+    setSyncDot('syncing');
+    _fbDB.ref('planner').set({
+      tasks: DB.getTasks(),
+      log:   DB.getLog(),
+      timer: DB.getTimer(),
+    }).then(() => {
+      setSyncDot('ok');
+      setTimeout(() => { _isSyncing = false; }, 400);
+    }).catch(() => { setSyncDot('error'); _isSyncing = false; });
+  }, 600); // 600ms デバウンス（ドラッグ中の連続書き込みを防ぐ）
+}
+
+function setSyncDot(status) {
+  const el = document.getElementById('syncDot');
+  if (!el) return;
+  const s = { loading: ['#f39c12','読み込み中'], syncing: ['#f39c12','同期中'], ok: ['#52b788','同期済み'], error: ['#e74c3c','エラー'] };
+  const [color, label] = s[status] || s.ok;
+  el.style.color = color;
+  el.title = label;
+}
+
 const DB = {
   getTasks: () => JSON.parse(localStorage.getItem('dp_tasks') || '[]'),
-  saveTasks: t => localStorage.setItem('dp_tasks', JSON.stringify(t)),
-  getTimer: () => JSON.parse(localStorage.getItem('dp_timer') || 'null'),
-  saveTimer: s => s ? localStorage.setItem('dp_timer', JSON.stringify(s)) : localStorage.removeItem('dp_timer'),
-  getLog: () => JSON.parse(localStorage.getItem('dp_log') || '[]'),
-  addLog: e => { const l = DB.getLog(); l.push(e); localStorage.setItem('dp_log', JSON.stringify(l)); },
+  saveTasks: t  => { localStorage.setItem('dp_tasks', JSON.stringify(t)); saveToFirebase(); },
+  getTimer: ()  => JSON.parse(localStorage.getItem('dp_timer') || 'null'),
+  saveTimer: s  => { s ? localStorage.setItem('dp_timer', JSON.stringify(s)) : localStorage.removeItem('dp_timer'); saveToFirebase(); },
+  getLog:   ()  => JSON.parse(localStorage.getItem('dp_log') || '[]'),
+  addLog:   e   => { const l = DB.getLog(); l.push(e); localStorage.setItem('dp_log', JSON.stringify(l)); saveToFirebase(); },
 };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -960,6 +1047,7 @@ function addDragBehavior(block, taskId, initialTop) {
       if (!moved && Math.abs(dy) < 5) return;
       if (!moved) {
         moved = true;
+        _isDragging = true;
         block.style.opacity = '0.82'; block.style.zIndex = '20';
         block.style.boxShadow = '0 6px 20px rgba(0,0,0,0.18)';
         block.style.cursor = 'grabbing'; block.style.transition = 'none';
@@ -982,6 +1070,7 @@ function addDragBehavior(block, taskId, initialTop) {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       document.body.style.cursor = ''; document.body.style.userSelect = '';
+      _isDragging = false;
       if (!moved) { openTaskSheet(taskId); return; }
       const Z2 = PX_PER_MIN();
       const mins2 = currentTop / Z2;
@@ -1043,6 +1132,7 @@ function mkEl(tag, cls, html = '') {
 }
 
 // ===== INIT =====
+initFirebase();
 buildTimeline();
 updateHeader();
 renderStats();
