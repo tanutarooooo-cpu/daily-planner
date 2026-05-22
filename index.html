@@ -413,13 +413,13 @@ function initFirebase() {
 }
 
 function applyRemoteData(remote) {
-  if (remote.tasks !== undefined) localStorage.setItem('dp_tasks', JSON.stringify(remote.tasks));
-  if (remote.log   !== undefined) localStorage.setItem('dp_log',   JSON.stringify(remote.log));
-  if (remote.timer !== undefined) {
-    remote.timer
-      ? localStorage.setItem('dp_timer', JSON.stringify(remote.timer))
-      : localStorage.removeItem('dp_timer');
-  }
+  // Firebase は配列をオブジェクト {0:..., 1:...} に変換することがあるため必ず配列に戻す
+  const toArr = v => !v ? [] : Array.isArray(v) ? v : Object.values(v);
+  localStorage.setItem('dp_tasks', JSON.stringify(toArr(remote.tasks)));
+  localStorage.setItem('dp_log',   JSON.stringify(toArr(remote.log)));
+  remote.timer
+    ? localStorage.setItem('dp_timer', JSON.stringify(remote.timer))
+    : localStorage.removeItem('dp_timer');
 }
 
 function saveToFirebase() {
