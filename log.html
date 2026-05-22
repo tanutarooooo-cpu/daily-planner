@@ -144,8 +144,36 @@
       color: #2d6a4f;
       flex-shrink: 0;
       font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      border-bottom: 1px dashed #b2dfcc;
     }
-
+    .log-duration:hover { opacity: 0.7; }
+    .log-edit-row {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f0ede8;
+    }
+    .log-edit-row.visible { display: flex; }
+    .log-edit-input {
+      width: 70px; padding: 5px 8px;
+      border: 1.5px solid #52b788; border-radius: 6px;
+      font-size: 13px; text-align: center;
+      outline: none; font-family: inherit;
+    }
+    .log-edit-label { font-size: 12px; color: #888; }
+    .log-edit-save {
+      background: #52b788; color: white; border: none;
+      border-radius: 6px; padding: 5px 12px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      font-family: inherit;
+    }
+    .log-edit-cancel {
+      background: none; border: none; color: #bbb;
+      font-size: 12px; cursor: pointer; font-family: inherit;
+    }
     .empty-state {
       text-align: center;
       padding: 48px 0;
@@ -376,7 +404,17 @@ function renderContent() {
             <div class="log-title">${entry.title}${catBadge}</div>
             <div class="log-meta">${hh}:${mm} 開始${diff}</div>
           </div>
-          <div class="log-duration" style="${cat ? `color:${cat.color}` : ''}">${formatMins(entry.duration || 0)}</div>
+          <div class="log-duration" style="${cat ? `color:${cat.color}` : ''}"
+               onclick="toggleEditRow('${entry.id}')" title="クリックして編集">
+            ${formatMins(entry.duration || 0)}
+          </div>
+        </div>
+        <div class="log-edit-row" id="edit_${entry.id}">
+          <input type="number" class="log-edit-input" id="editVal_${entry.id}"
+                 value="${entry.duration || 0}" min="1" max="480">
+          <span class="log-edit-label">分</span>
+          <button class="log-edit-save" onclick="saveLogEdit('${entry.id}')">保存</button>
+          <button class="log-edit-cancel" onclick="toggleEditRow('${entry.id}')">キャンセル</button>
         </div>`;
     });
     html += `</div>`;
@@ -387,6 +425,27 @@ function renderContent() {
   }
 
   content.innerHTML = html;
+}
+
+function toggleEditRow(entryId) {
+  const row = document.getElementById('edit_' + entryId);
+  if (!row) return;
+  row.classList.toggle('visible');
+  if (row.classList.contains('visible')) {
+    document.getElementById('editVal_' + entryId)?.focus();
+  }
+}
+
+function saveLogEdit(entryId) {
+  const input = document.getElementById('editVal_' + entryId);
+  const newDur = Math.max(1, parseInt(input?.value) || 1);
+  const log = DB.getLog();
+  const entry = log.find(e => e.id === entryId);
+  if (entry) {
+    entry.duration = newDur;
+    localStorage.setItem('dp_log', JSON.stringify(log));
+  }
+  renderContent();
 }
 
 function clearDay() {
