@@ -445,6 +445,15 @@ function buildTimeline() {
   });
 
   placeNowLine(tl);
+
+  tl.onclick = (e) => {
+    if (e.target.closest('.task-block')) return;
+    const Z = PX_PER_MIN();
+    const rect = tl.getBoundingClientRect();
+    const rawMins = Math.max(0, Math.min(1439, (e.clientY - rect.top) / Z));
+    const snapped = Math.round(rawMins / 15) * 15;
+    openAddSheet(`${pad(Math.floor(snapped / 60) % 24)}:${pad(snapped % 60)}`);
+  };
 }
 
 function placeNowLine(container) {
@@ -814,9 +823,30 @@ function openTaskSheet(taskId) {
       <div class="cat-picker">${catPills}</div>
     </div>
     <div class="sheet-buttons">${buttons}</div>
+    <div style="text-align:center;margin-top:10px">
+      <button onclick="copyTask('${taskId}')" style="background:none;border:none;font-size:12px;color:#bbb;cursor:pointer;font-family:inherit;padding:4px 8px;">📋 このタスクをコピーして追加</button>
+    </div>
   `;
   showOverlay();
   if (isRunning) startTicking();
+}
+
+function copyTask(taskId) {
+  const tasks = DB.getTasks();
+  const src = tasks.find(t => t.id === taskId);
+  if (!src) return;
+  tasks.push({
+    id: uid(),
+    title: src.title,
+    scheduledTime: src.scheduledTime,
+    duration: src.duration,
+    category: src.category || null,
+    date: TODAY,
+    completed: false,
+    createdAt: Date.now()
+  });
+  DB.saveTasks(tasks);
+  closeSheet(); buildTimeline(); updateHeader();
 }
 
 function changeTaskCategory(taskId, newCat) {
@@ -838,13 +868,16 @@ function changeTaskCategory(taskId, newCat) {
   openTaskSheet(taskId);
 }
 
-function openAddSheet() {
-  const now = new Date();
-  const hh = now.getHours();
-  const mm = Math.ceil(now.getMinutes() / 15) * 15;
-  const adjH = mm >= 60 ? hh + 1 : hh;
-  const adjM = mm >= 60 ? 0 : mm;
-  const defaultTime = `${pad(adjH % 24)}:${pad(adjM)}`;
+function openAddSheet(presetTime = null) {
+  let defaultTime = presetTime;
+  if (!defaultTime) {
+    const now = new Date();
+    const hh = now.getHours();
+    const mm = Math.ceil(now.getMinutes() / 15) * 15;
+    const adjH = mm >= 60 ? hh + 1 : hh;
+    const adjM = mm >= 60 ? 0 : mm;
+    defaultTime = `${pad(adjH % 24)}:${pad(adjM)}`;
+  }
 
   const catOptions = Object.entries(CATEGORIES).map(([key, c]) =>
     `<button class="cat-pill" data-cat="${key}" style="border-color:${c.color}"
